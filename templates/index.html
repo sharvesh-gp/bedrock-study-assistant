@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Study Buddy</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #eef0f8;
+            color: #2d2d3a;
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4a4580;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            margin-top: 0.4rem;
+            color: #6b6b8a;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 2rem;
+            box-shadow: 0 2px 12px rgba(100, 90, 180, 0.08);
+            margin-bottom: 1.5rem;
+        }
+
+        /* ── File upload ── */
+        .upload-area {
+            border: 2px dashed #c4c0e8;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            position: relative;
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: #7c72d8;
+            background: #f5f3ff;
+        }
+
+        .upload-area input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .upload-area .hint {
+            color: #9490b8;
+            font-size: 0.85rem;
+            margin-top: 0.3rem;
+        }
+
+        #file-name {
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+            color: #4a4580;
+            font-weight: 500;
+            min-height: 1.2em;
+        }
+
+        /* ── Mode buttons ── */
+        .section-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #9490b8;
+            margin-bottom: 0.75rem;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .mode-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: 0.65rem 1rem;
+            border: 2px solid #c4c0e8;
+            border-radius: 8px;
+            background: #fff;
+            color: #4a4580;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .mode-btn:hover {
+            border-color: #7c72d8;
+            background: #f5f3ff;
+        }
+
+        .mode-btn.active {
+            border-color: #7c72d8;
+            background: #7c72d8;
+            color: #fff;
+        }
+
+        /* ── Question input ── */
+        #question-group {
+            margin-top: 1.25rem;
+            display: none;
+        }
+
+        #question-group.visible {
+            display: block;
+        }
+
+        #question-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #6b6b8a;
+            margin-bottom: 0.4rem;
+        }
+
+        #question {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            border: 2px solid #c4c0e8;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            color: #2d2d3a;
+            outline: none;
+            transition: border-color 0.2s;
+            resize: vertical;
+            min-height: 60px;
+        }
+
+        #question:focus {
+            border-color: #7c72d8;
+        }
+
+        /* ── Submit button ── */
+        #submit-btn {
+            width: 100%;
+            margin-top: 1.5rem;
+            padding: 0.8rem;
+            background: #7c72d8;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, opacity 0.15s;
+        }
+
+        #submit-btn:hover:not(:disabled) {
+            background: #6a60c8;
+        }
+
+        #submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ── Spinner ── */
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 1.5rem;
+        }
+
+        #loading.visible {
+            display: block;
+        }
+
+        .spinner {
+            width: 36px;
+            height: 36px;
+            border: 4px solid #c4c0e8;
+            border-top-color: #7c72d8;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 0.6rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #loading p {
+            color: #6b6b8a;
+            font-size: 0.9rem;
+        }
+
+        /* ── Error area ── */
+        #error-area {
+            display: none;
+            background: #fff0f0;
+            border: 1px solid #f5c2c2;
+            border-radius: 8px;
+            padding: 0.9rem 1.1rem;
+            color: #b84040;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+
+        #error-area.visible {
+            display: block;
+        }
+
+        /* ── Results ── */
+        #results-card {
+            display: none;
+        }
+
+        #results-card.visible {
+            display: block;
+        }
+
+        #results-card h2 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #4a4580;
+            margin-bottom: 1rem;
+        }
+
+        #result-text {
+            white-space: pre-wrap;
+            font-size: 0.93rem;
+            line-height: 1.7;
+            color: #2d2d3a;
+            background: #f8f7fe;
+            border-radius: 8px;
+            padding: 1.2rem;
+            border: 1px solid #e0ddf5;
+            word-break: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📚 Smart Study Buddy</h1>
+            <p>Upload your lecture notes and let AI help you study</p>
+        </header>
+
+        <!-- Error display -->
+        <div id="error-area" role="alert" aria-live="polite"></div>
+
+        <!-- Main form card -->
+        <div class="card">
+            <form id="study-form" novalidate>
+
+                <!-- File upload -->
+                <div class="section-label">Upload PDF</div>
+                <div class="upload-area" id="upload-area">
+                    <input type="file" id="file-input" name="file" accept=".pdf" aria-label="Upload a PDF file">
+                    <span class="upload-icon">📄</span>
+                    <div><strong>Click to upload</strong> or drag and drop</div>
+                    <div class="hint">PDF only · max 5 MB</div>
+                </div>
+                <div id="file-name" aria-live="polite"></div>
+
+                <!-- Mode selection -->
+                <div class="section-label" style="margin-top:1.5rem;">Study Mode</div>
+                <div class="mode-buttons" role="group" aria-label="Study mode">
+                    <button type="button" class="mode-btn" data-mode="summarize">✏️ Summarize</button>
+                    <button type="button" class="mode-btn" data-mode="quiz">❓ Quiz Me</button>
+                    <button type="button" class="mode-btn" data-mode="ask">💬 Ask a Question</button>
+                </div>
+                <input type="hidden" id="mode-input" name="mode" value="">
+
+                <!-- Question input (ask mode only) -->
+                <div id="question-group">
+                    <label for="question">Your question</label>
+                    <textarea id="question" name="question" placeholder="Type your question here…" rows="2"></textarea>
+                </div>
+
+                <button type="submit" id="submit-btn">Analyze</button>
+            </form>
+        </div>
+
+        <!-- Loading spinner -->
+        <div id="loading" aria-live="polite" aria-label="Processing">
+            <div class="spinner"></div>
+            <p>Analyzing your notes…</p>
+        </div>
+
+        <!-- Results -->
+        <div class="card" id="results-card">
+            <h2>Result</h2>
+            <pre id="result-text"></pre>
+        </div>
+    </div>
+    <script>
+        const form        = document.getElementById('study-form');
+        const fileInput   = document.getElementById('file-input');
+        const fileNameEl  = document.getElementById('file-name');
+        const modeBtns    = document.querySelectorAll('.mode-btn');
+        const modeInput   = document.getElementById('mode-input');
+        const questionGrp = document.getElementById('question-group');
+        const submitBtn   = document.getElementById('submit-btn');
+        const loading     = document.getElementById('loading');
+        const errorArea   = document.getElementById('error-area');
+        const resultsCard = document.getElementById('results-card');
+        const resultText  = document.getElementById('result-text');
+        const uploadArea  = document.getElementById('upload-area');
+
+        // ── Show selected filename ──
+        fileInput.addEventListener('change', () => {
+            fileNameEl.textContent = fileInput.files[0]
+                ? `Selected: ${fileInput.files[0].name}`
+                : '';
+        });
+
+        // ── Drag-and-drop visual feedback ──
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        ['dragleave', 'drop'].forEach(evt =>
+            uploadArea.addEventListener(evt, () => uploadArea.classList.remove('drag-over'))
+        );
+
+        // ── Mode selection ──
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                modeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                modeInput.value = btn.dataset.mode;
+
+                // Toggle question field
+                if (btn.dataset.mode === 'ask') {
+                    questionGrp.classList.add('visible');
+                } else {
+                    questionGrp.classList.remove('visible');
+                    document.getElementById('question').value = '';
+                }
+            });
+        });
+
+        // ── Form submission ──
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Client-side guard for no file
+            if (!fileInput.files || fileInput.files.length === 0) {
+                showError('Please select a PDF file to upload.');
+                return;
+            }
+
+            // Client-side guard for no mode
+            if (!modeInput.value) {
+                showError('Please select a study mode.');
+                return;
+            }
+
+            // Client-side guard for empty question
+            if (modeInput.value === 'ask' && !document.getElementById('question').value.trim()) {
+                showError('Please enter a question.');
+                return;
+            }
+
+            // Build form data
+            const data = new FormData(form);
+
+            // Show spinner, hide previous output
+            setLoading(true);
+            hideError();
+            hideResults();
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: data,
+                });
+                const json = await response.json();
+
+                if (json.success) {
+                    showResults(json.result);
+                } else {
+                    showError(json.error || 'An unexpected error occurred.');
+                }
+            } catch (err) {
+                showError('Could not reach the server. Please try again.');
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // ── Helpers ──
+        function setLoading(on) {
+            submitBtn.disabled = on;
+            loading.classList.toggle('visible', on);
+        }
+
+        function showError(msg) {
+            errorArea.textContent = msg;
+            errorArea.classList.add('visible');
+        }
+
+        function hideError() {
+            errorArea.textContent = '';
+            errorArea.classList.remove('visible');
+        }
+
+        function showResults(text) {
+            resultText.textContent = text;
+            resultsCard.classList.add('visible');
+        }
+
+        function hideResults() {
+            resultsCard.classList.remove('visible');
+            resultText.textContent = '';
+        }
+    </script>
+</body>
+</html>
